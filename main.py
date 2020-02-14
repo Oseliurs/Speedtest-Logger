@@ -1,8 +1,6 @@
 ## Import
 import speedtest
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
-from time import time,strftime,gmtime
+import paho.mqtt.client as mqtt
 
 ## Paramètres
 servers = []
@@ -14,13 +12,12 @@ threads = None
 test = True
 # If you want to do the speedtest or just test the rest of the code
 
+# Connect to MQTT Broker
+client = mqtt.Client()
+username_pw_set(user, password="Ov96Hf66&*")
+client.connect("rutaceae.ddns.net", 1883)
+
 ## Code
-
-#Connect to google servers
-scope = ['https://spreadsheets.google.com/feeds','https://www.googleapis.com/auth/drive']
-creds = ServiceAccountCredentials.from_json_keyfile_name('/home/pi/Speedtest-Home/client_secret.json', scope)
-client = gspread.authorize(creds)
-
 if test == True:
   # Do a speedtest.
   print("Warning Speedtesting: You may encounter some slowlyness while the test is running.")
@@ -35,17 +32,11 @@ if test == True:
 
 # print(results_dict)
 
-sheet = client.open("Speedtest-Home").sheet1
-
 # print([ strftime("%H:%M:%S", gmtime()), strftime("%x"), results_dict["ping"], results_dict["download"]/1000000, results_dict["upload"]/1000000 ])
 
 if test == True:
   print("Uploading Results")
-  sheet.insert_row([
-                    strftime("%H:%M:%S", gmtime()),
-                    strftime("%x"),
-                    results_dict["ping"],
-                    round(results_dict["download"]/1000000 ,3),
-                    round(results_dict["upload"]/1000000 ,3)
-                    ], 2)
+  client.publish(topic="speedtest/ping", payload=str(results_dict["ping"]), qos=1, retain=False)
+  client.publish(topic="speedtest/download", payload=str(results_dict["download"]/1000000), qos=1, retain=False)
+  client.publish(topic="speedtest/upload", payload=str(results_dict["upload"]/1000000), qos=1, retain=False)
   print("Results Uploaded")
